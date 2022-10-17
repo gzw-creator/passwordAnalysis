@@ -65,7 +65,7 @@ def CheckForAdjacency(Coordinates):
 save_path = "./key_result.csv"
 save_path_2 = "./key_result2.csv"
 object_list = []
-with open("./yahoo.csv") as file:  # 读入文件
+with open("./csdn.csv") as file:  # 读入文件
 
     for line in file:  # 逐行读入
         print(line)
