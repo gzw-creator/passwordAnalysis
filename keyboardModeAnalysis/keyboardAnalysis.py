@@ -24,9 +24,6 @@ def ConvertToCoordinates(Password):
     return Coordinates
 
 
-print(ConvertToCoordinates("qwer"))
-
-
 def isAdjacent(Coord1, Coord2):
     if (abs(Coord1[0] - Coord2[0]) > 1 or abs(Coord1[1] - Coord2[1]) > 1) or (
             abs(Coord1[0] - Coord2[0]) == 0 and abs(Coord1[1] - Coord2[1]) == 0):
@@ -65,30 +62,21 @@ def CheckForAdjacency(Coordinates):
         return "null"
 
 
-print(CheckForAdjacency(ConvertToCoordinates("1qwertyuio")))
-
-print("ok")
-
 save_path = "./key_result.csv"
 save_path_2 = "./key_result2.csv"
 object_list = []
-with open("D:\mine\passwordAnalysis\passwordAnalysis\keyboardModeAnalysis\data\plain_yahoo.csv") as file:  # 读入文件
+with open("./yahoo.csv") as file:  # 读入文件
 
     for line in file:  # 逐行读入
-        # print(line)
+        print(line)
+        passwd = line
+        if passwd!="passwd":
+            # print(passwd)
+            # fen=wordninja.split(passwd)     #对passwd分词
+            fen = CheckForAdjacency(ConvertToCoordinates(passwd))
+            if fen != "null":
+                object_list.append(fen)
 
-        for i in range(1, 100):  # tqdm(range(1,100)) :
-            if line[i:i + 1] == '"':
-                break
-        for j in tqdm(range(i + 1, 100)):  # 根据第二个引号找到passwd
-            if line[j:j + 1] == '"':
-                passwd = line[j + 1:]
-                # print(passwd)
-                # fen=wordninja.split(passwd)     #对passwd分词
-                fen = CheckForAdjacency(ConvertToCoordinates(passwd))
-                if fen != "null":
-                    object_list.append(fen)
-                break
     print(object_list)
     object_list_2 = []
     for ob in object_list:
@@ -98,8 +86,9 @@ with open("D:\mine\passwordAnalysis\passwordAnalysis\keyboardModeAnalysis\data\p
 
     # print(object_list_2)
     word_counts_2 = collections.Counter(object_list_2)  # 对分词做词频统计
-    word_counts_2 = word_counts_2.most_common(8)  # 获取前10最高频的词
+    word_counts_2 = word_counts_2.most_common(15)  # 获取前10最高频的词
     print(word_counts_2)  # 输出检查
+
     with open(save_path_2, 'w') as sfile:
         # sfile.writelines("key,frequency"+'\n')
         pabar = tqdm(word_counts_2)
@@ -111,7 +100,7 @@ with open("D:\mine\passwordAnalysis\passwordAnalysis\keyboardModeAnalysis\data\p
     file.close()
 
     word_counts = collections.Counter(object_list)  # 对分词做词频统计
-    word_counts = word_counts.most_common(20)  # 获取前10最高频的词
+    word_counts = word_counts.most_common(15)  # 获取前10最高频的词
     print(word_counts)  # 输出检查
     with open(save_path, 'w') as sfile:
         # sfile.writelines("key,frequency"+'\n')

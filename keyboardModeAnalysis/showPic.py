@@ -21,10 +21,11 @@ y1data = data.loc[:, 'frequency']
 
 #作图
 plt.plot(xdata, y1data, color='r', marker='o', mec='r', mfc='w', label=u'frequency')
+plt.xticks(rotation=90)
 # plt.plot(xdata, y2data, color='b', marker='o', mec='r', mfc='w', label=u'列名3')  # color可自定义折线颜色，marker可自定义点形状，label为折线标注
 plt.title(u"keyboard", size=10)
 plt.legend()
 plt.xlabel(u'key', size=10)
 plt.ylabel(u'frequency', size=10)
-
+plt.savefig("key_board2.png",dpi=300)
 plt.show()
