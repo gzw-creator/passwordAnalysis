@@ -9,6 +9,10 @@ def get_all_pwd_struction():
     :return:
     """
     pwd_struction = []
+    with open('./base_struct.txt', 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        for line in lines:
+            pwd_struction.append(line.split('\t')[0])
     return pwd_struction
 
 
@@ -81,4 +85,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    print(get_all_pwd_struction())
