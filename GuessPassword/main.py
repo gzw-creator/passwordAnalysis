@@ -2,6 +2,9 @@
 import logging
 from multiprocessing import Pool
 
+import pandas as pd
+from sklearn.utils import shuffle
+
 
 def get_all_pwd_struction():
     """
@@ -16,12 +19,16 @@ def get_all_pwd_struction():
     return pwd_struction
 
 
-def get_test_pwds():
+def get_test_pwds(pwd_file, num):
     """
     获取测试用的所有口令
+    :param pwd_file: 口令文件
+    :param num: 测试口令数量
     :return:
     """
-    test_pwds = []
+    pwd = pd.read_csv(pwd_file)
+    pwd = shuffle(pwd)
+    test_pwds = pwd.iloc[:num, :]['passwd'].values.tolist()
     return test_pwds
 
 
@@ -85,5 +92,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
-    print(get_all_pwd_struction())
+    main()
