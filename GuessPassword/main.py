@@ -32,6 +32,63 @@ def get_test_pwds(pwd_file, num):
     return test_pwds
 
 
+def identify_small_pattern(pwd_struction):
+    """
+    将口令结构划分为一个个的小模块，即将"L1D1S1"划分为"L1"、"D1"、"S1"
+    :param pwd_struction: 口令结构
+    :return:
+    """
+    indexes = []
+    patterns = []
+    for index, s in enumerate(pwd_struction):
+        if s in ['L', 'S', 'D']:
+            indexes.append(index)
+    for i in range(len(indexes)):
+        if i < len(indexes)-1:
+            patterns.append(pwd_struction[indexes[i]:indexes[i + 1]])
+        else:
+            patterns.append(pwd_struction[indexes[i]:])
+    return patterns
+
+
+def generte_pwd(father_pwd, child_pwd, position, pattern_num, candidate_small_pattern_pwd, guess_pwds):
+    """
+    生成口令
+    :return:
+    """
+    if position < pattern_num - 1:
+        father_pwd = child_pwd
+        for i in range(len(candidate_small_pattern_pwd[position])):  # 遍历某个小模块所有的可能
+            child_pwd = father_pwd + str(candidate_small_pattern_pwd[position][i])
+            generte_pwd(father_pwd, child_pwd, position + 1, pattern_num, candidate_small_pattern_pwd, guess_pwds)
+    else:
+        father_pwd = child_pwd
+        for i in range(len(candidate_small_pattern_pwd[position])):
+            child_pwd = father_pwd + str(candidate_small_pattern_pwd[position][i])
+            # print(child_pwd)
+            guess_pwds.append(child_pwd)
+
+
+def get_all_small_pattern_pwd(patterns):
+    """
+    根据口令的每个小模块，获取对应模块的所有可能的密码
+    :param patterns:
+    :return:
+    """
+    candidate_small_pattern_pwd = []
+    for pattern in patterns:
+        if 'L' in pattern:
+            data = pd.read_csv('./base_alpha/'+pattern+'.txt', header=None, names=['pwd', 'p'], sep='\t')
+            candidate_small_pattern_pwd.append(data['pwd'].values.tolist())
+        if 'D' in pattern:
+            data = pd.read_csv('./base_digit/'+pattern+'.txt', header=None, names=['pwd', 'p'], sep='\t')
+            candidate_small_pattern_pwd.append(data['pwd'].values.tolist())
+        if 'S' in pattern:
+            data = pd.read_csv('./base_special/'+pattern+'.txt', header=None, names=['pwd', 'p'], sep='\t', quoting=3)
+            candidate_small_pattern_pwd.append(data['pwd'].values.tolist())
+    return candidate_small_pattern_pwd
+
+
 def generate_pwds_by_struction(pwd_struction):
     """
     根据口令结构，读取相应的口令分析文件，生成该结构的口令
@@ -39,6 +96,10 @@ def generate_pwds_by_struction(pwd_struction):
     :return: 所有猜测的口令
     """
     guessing_pwds = []
+    patterns = identify_small_pattern(pwd_struction)
+    candidate_small_pattern_pwd = get_all_small_pattern_pwd(patterns)
+    pattern_num = len(patterns)
+    generte_pwd('', '', 0, pattern_num, candidate_small_pattern_pwd, guessing_pwds)
     return guessing_pwds
 
 
@@ -92,4 +153,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    print(generate_pwds_by_struction('L1S1D1'))
