@@ -153,5 +153,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
-    print(generate_pwds_by_struction('L1S1D1'))
+    main()
