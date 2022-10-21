@@ -132,7 +132,7 @@ class Analysis(object):
 if __name__ == '__main__':
     time1 = time.perf_counter()
 
-    data = pd.read_csv('../data/yahoo/train_test/test.csv',encoding='gbk')
+    data = pd.read_csv('../data/yahoo/train_test/train.csv',encoding='gbk')
     passwdList = pd.Series(data['passwd'].values)
 
     ana = Analysis(passwdList)
