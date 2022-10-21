@@ -1,7 +1,7 @@
 import pandas
 import numpy as np
 
-path = "../data/yahoo/"
+path = "../data/csdn/"
 
 data0 = pandas.read_csv(path+"L.txt", header=None)
 data1 = pandas.read_csv(path+"D.txt", header=None)
