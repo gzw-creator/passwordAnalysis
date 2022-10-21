@@ -10,8 +10,8 @@ data1=pandas.DataFrame(data1)
 
 
 
-X_train, X_test = train_test_split(data0, test_size=0.3, random_state=42)
-X_train1, X_test1 = train_test_split(data1, test_size=0.3, random_state=42)
+X_train, X_test = train_test_split(data0, test_size=0.001,train_size=0.001,random_state=42)
+X_train1, X_test1 = train_test_split(data1, test_size=0.001,train_size=0.001,random_state=42)
 
 # X_train = pandas.DataFrame(X_train)
 # X_test = pandas.DataFrame(X_test)
