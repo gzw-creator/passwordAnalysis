@@ -8,7 +8,7 @@ import csv
 import pandas as pd
 from pandas import Series, DataFrame
 
-
+path = "../data/csdn"
 class Analysis(object):
     def __init__(self, passwdList):
         self.passwdList = passwdList
@@ -26,7 +26,7 @@ class Analysis(object):
             df1.loc[x] = [x, ge]  # 将结构串，数量，以及频率存储到DataFrame中
             
         df1 = df1.sort_values(by='freq',ascending=False)  # 根据nums进行排序
-        df1.to_csv("../data/yahoo/L.txt",index = False)
+        df1.to_csv(path+"/L.txt",index = False)
         #print(df1)
         
         df2 = DataFrame(columns=('str', 'freq')) 
@@ -35,7 +35,7 @@ class Analysis(object):
             df2.loc[x] = [x,ge]  # 将结构串，数量，以及频率存储到DataFrame中
             
         df2 = df2.sort_values(by='freq',ascending=False)  # 根据nums进行排序
-        df2.to_csv("../data/yahoo/D.txt",index = False)
+        df2.to_csv(path+"/D.txt",index = False)
         #print(df2)
         
         df3 = DataFrame(columns=('str','freq')) 
@@ -45,7 +45,7 @@ class Analysis(object):
             df3.loc[x] = [x, ge]  
             
         df3 = df3.sort_values(by='freq',ascending=False) 
-        df3.to_csv("../data/yahoo/S.txt",index = False)
+        df3.to_csv(path+"/S.txt",index = False)
 
             #统计口令各结构频数
     def countStrucFre(self):
@@ -132,8 +132,9 @@ class Analysis(object):
 if __name__ == '__main__':
     time1 = time.perf_counter()
 
-    data = pd.read_csv('../data/yahoo/train_test/train.csv',encoding='gbk')
-    passwdList = pd.Series(data['passwd'].values)
+    data = pd.read_csv(path+'/train_test/train.csv',encoding='gbk',header=None)
+    data.columns=["passwd"]
+    passwdList = pd.Series(data["passwd"].values)
 
     ana = Analysis(passwdList)
 
