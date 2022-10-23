@@ -1,9 +1,17 @@
 # 口令生成算法
 import logging
+import os
+import re
 from multiprocessing import Pool
 
 import pandas as pd
 from sklearn.utils import shuffle
+import shutil
+
+# 定义全局变量
+STRUCT_NUM = -1  # 口令结构的数量（小于0，取所有口令结构）
+FILE_SIZE = 36999999  # 生成的猜测口令文件的上限大小
+SMALL_PATTERN = -1  # 读取每个口令子结构对应的文件的内容的数量（小于0，读取所有内容）
 
 
 def get_all_pwd_struction():
@@ -12,10 +20,11 @@ def get_all_pwd_struction():
     :return:
     """
     pwd_struction = []
-    with open('./base_struct.txt', 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-        for line in lines:
-            pwd_struction.append(line.split('\t')[0])
+    if STRUCT_NUM < 0:
+        data = pd.read_csv('./str_analysis_csdn.csv')
+    else:
+        data = pd.read_csv('./str_analysis_csdn.csv', nrows=STRUCT_NUM)
+    pwd_struction = data['structure'].astype(str).values.tolist()
     return pwd_struction
 
 
@@ -26,10 +35,11 @@ def get_test_pwds(pwd_file, num):
     :param num: 测试口令数量
     :return:
     """
-    pwd = pd.read_csv(pwd_file)
-    pwd = shuffle(pwd)
-    test_pwds = pwd.iloc[:num, :]['passwd'].values.tolist()
-    return test_pwds
+    if num < 0:
+        pwd = pd.read_csv(pwd_file, header=None)
+    else:
+        pwd = pd.read_csv(pwd_file, nrows=num, header=None)
+    return pwd[0].astype(str).values.tolist()
 
 
 def identify_small_pattern(pwd_struction):
@@ -51,7 +61,7 @@ def identify_small_pattern(pwd_struction):
     return patterns
 
 
-def generte_pwd(father_pwd, child_pwd, position, pattern_num, candidate_small_pattern_pwd, guess_pwds):
+def generte_pwd(father_pwd, child_pwd, position, pattern_num, candidate_small_pattern_pwd, file_name):
     """
     生成口令
     :return:
@@ -60,13 +70,20 @@ def generte_pwd(father_pwd, child_pwd, position, pattern_num, candidate_small_pa
         father_pwd = child_pwd
         for i in range(len(candidate_small_pattern_pwd[position])):  # 遍历某个小模块所有的可能
             child_pwd = father_pwd + str(candidate_small_pattern_pwd[position][i])
-            generte_pwd(father_pwd, child_pwd, position + 1, pattern_num, candidate_small_pattern_pwd, guess_pwds)
+            a = generte_pwd(father_pwd, child_pwd, position + 1, pattern_num, candidate_small_pattern_pwd, file_name)
+            if not a:
+                return False
+        return True
     else:
         father_pwd = child_pwd
         for i in range(len(candidate_small_pattern_pwd[position])):
             child_pwd = father_pwd + str(candidate_small_pattern_pwd[position][i])
             # print(child_pwd)
-            guess_pwds.append(child_pwd)
+            if os.path.exists(file_name) and os.path.getsize(file_name) > FILE_SIZE:  # 当对一个结构的口令的猜测数量太多时，直接停止
+                return False
+            with open(file_name, 'a+', encoding='UTF-8') as f:
+                f.write('{}\n'.format(child_pwd))
+        return True
 
 
 def get_all_small_pattern_pwd(patterns):
@@ -78,14 +95,23 @@ def get_all_small_pattern_pwd(patterns):
     candidate_small_pattern_pwd = []
     for pattern in patterns:
         if 'L' in pattern:
-            data = pd.read_csv('./base_alpha/'+pattern+'.txt', header=None, names=['pwd', 'p'], sep='\t')
-            candidate_small_pattern_pwd.append(data['pwd'].values.tolist())
+            if SMALL_PATTERN < 0:
+                data = pd.read_csv('./csdn/L/'+pattern+'.txt', header=None, names=['pwd', 'p'])
+            else:
+                data = pd.read_csv('./csdn/L/'+pattern+'.txt', header=None, names=['pwd', 'p'], nrows=SMALL_PATTERN)
+            candidate_small_pattern_pwd.append(data['pwd'].astype(str).values.tolist())
         if 'D' in pattern:
-            data = pd.read_csv('./base_digit/'+pattern+'.txt', header=None, names=['pwd', 'p'], sep='\t')
-            candidate_small_pattern_pwd.append(data['pwd'].values.tolist())
+            if SMALL_PATTERN < 0:
+                data = pd.read_csv('./csdn/D/'+pattern+'.txt', header=None, names=['pwd', 'p'])
+            else:
+                data = pd.read_csv('./csdn/D/'+pattern+'.txt', header=None, names=['pwd', 'p'], nrows=SMALL_PATTERN)
+            candidate_small_pattern_pwd.append(data['pwd'].astype(str).values.tolist())
         if 'S' in pattern:
-            data = pd.read_csv('./base_special/'+pattern+'.txt', header=None, names=['pwd', 'p'], sep='\t', quoting=3)
-            candidate_small_pattern_pwd.append(data['pwd'].values.tolist())
+            if SMALL_PATTERN < 0:
+                data = pd.read_csv('./csdn/S/'+pattern+'.txt', header=None, names=['pwd', 'p'], quoting=3)
+            else:
+                data = pd.read_csv('./csdn/S/'+pattern+'.txt', header=None, names=['pwd', 'p'], quoting=3, nrows=SMALL_PATTERN)
+            candidate_small_pattern_pwd.append(data['pwd'].astype(str).values.tolist())
     return candidate_small_pattern_pwd
 
 
@@ -95,62 +121,73 @@ def generate_pwds_by_struction(pwd_struction):
     :param pwd_struction: 口令结构，字符串类型
     :return: 所有猜测的口令
     """
-    guessing_pwds = []
+    # guessing_pwds = []
     patterns = identify_small_pattern(pwd_struction)
     candidate_small_pattern_pwd = get_all_small_pattern_pwd(patterns)
     pattern_num = len(patterns)
-    generte_pwd('', '', 0, pattern_num, candidate_small_pattern_pwd, guessing_pwds)
-    return guessing_pwds
+
+    generte_pwd('', '', 0, pattern_num, candidate_small_pattern_pwd, './guess_csdn/'+pwd_struction+'.txt')
+    # return guessing_pwds
 
 
-def match_test_pwds(real_pwds, guessing_pwds):
-    """
-    将猜测的口令与真实口令进行比对，比对成功的口令输出到日志中，将匹配成功的口令数量返回
-    :param real_pwds: 真实口令列表
-    :param guessing_pwds: 猜测的口令列表
-    :return: 与真实口令匹配的数量
-    """
-    matched_pwd_num = 0
-    for guessing_pwd in guessing_pwds:
-        if guessing_pwd in real_pwds:
-            matched_pwd_num += 1
-            logging.info('pwd: {} match!'.format(guessing_pwd))
-    return matched_pwd_num
-
-
-def generate_pwd_and_test(pwd_struction, test_pwds):
+def generate_pwd_and_test(pwd_struction):
     """
     根据口令结构生成口令，并与测试口令匹配，返回匹配上的口令的个数
     :param pwd_struction: 口令结构
-    :param test_pwds: 真实的口令
     :return: 生成的口令与真是口令匹配的个数
     """
-    guessing_pwds = generate_pwds_by_struction(pwd_struction)  # 根据口令结构生成所有可能的口令
-    matched_num = match_test_pwds(test_pwds, guessing_pwds)
-    return matched_num
+    generate_pwds_by_struction(pwd_struction)  # 根据口令结构生成所有可能的口令
+    # matched_num = match_test_pwds(test_pwds, guessing_pwds)
+    # return matched_num
 
 
-def main():
+# def match_pwd(guess_pwd_file, test_pwds):
+#     pwds = pd.read_csv(guess_pwd_file, header=None, quoting=3)[0].astype(str).values.tolist()
+#     match_number = 0
+#     for pwd in pwds:
+#         if pwd in test_pwds:
+#             match_number = match_number + 1
+#     return match_number
+
+
+# def write_num(num):
+#     with open('train_result.csv', 'a+', encoding='UTF-8') as f:
+#         f.write('{}\n'.format(num))
+
+
+def main(test_num):
     """
     主函数
     :return:
     """
     pwd_structions = get_all_pwd_struction()  # 获取所有的口令结构
-    test_pwds = get_test_pwds()  # 获取所有测试口令
-
+    # test_pwds = get_test_pwds('./csdn/train_test/train.csv', test_num)  # 获取所有测试口令
+    # print('test&train pwd len:', len(test_pwds))
     p = Pool(10)
-    matched_nums = []
     for pwd_struction in pwd_structions:
-        p.apply_async(generate_pwd_and_test, args=(pwd_struction, test_pwds), callback=matched_nums.append)
+        p.apply_async(generate_pwd_and_test, args=(pwd_struction, ))
     p.close()
     p.join()
 
     # 计算准确率
-    num = 0
-    for i in matched_nums:
-        num += i
-    print('accuracy:{}'.format(num/len(test_pwds)))
+    # all_guess_pwd = os.listdir('./guess_csdn')
+    # right_pwd = []
+    # p = Pool(10)
+    # for guess_pwd in all_guess_pwd:
+    #     if '.txt' not in guess_pwd:
+    #         continue
+    #     p.apply_async(match_pwd, args=('./guess_csdn/'+guess_pwd, test_pwds), callback=write_num)
+    # p.close()
+    # p.join()
+    # print('accuracy:{}'.format(match_num/len(test_pwds)))
 
 
 if __name__ == '__main__':
-    main()
+    # 删除guess文件夹下的内容
+    # shutil.rmtree('./guess_yahoo')
+    # os.mkdir('./guess_yahoo')
+    # print('创建guess成功')
+    # print('start')
+    main(-1)
+    # data = pd.read_csv('train_result.csv', header=None)
+    # print('match num:', data[0].sum())
